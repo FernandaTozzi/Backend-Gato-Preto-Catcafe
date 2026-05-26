@@ -4,11 +4,11 @@ import com.catcafe.model.Cat;
 import com.catcafe.service.CatService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/cats")
@@ -34,7 +34,7 @@ public class CatController {
     @PostMapping(consumes = "multipart/form-data")
     public Cat criar(
             @RequestParam("nome") String nome,
-            @RequestParam("idade") int idade,
+            @RequestParam("idade") Integer idade,
             @RequestParam("genero") String genero,
             @RequestParam("tipoAdocao") String tipoAdocao,
             @RequestParam("descricao") String descricao,
@@ -42,19 +42,8 @@ public class CatController {
             @RequestParam("foto") MultipartFile foto
     ) throws IOException {
 
-        // 📁 nome do arquivo
-        String fileName = foto.getOriginalFilename();
+        String fileName = salvarImagem(foto);
 
-        // 📁 caminho onde será salvo
-        Path path = Paths.get("uploads/" + fileName);
-
-        // 📁 cria pasta se não existir
-        Files.createDirectories(path.getParent());
-
-        // 💾 salva arquivo
-        Files.write(path, foto.getBytes());
-
-        // 🐱 cria objeto
         Cat cat = new Cat();
         cat.setNome(nome);
         cat.setIdade(idade);
@@ -66,14 +55,58 @@ public class CatController {
 
         return service.salvar(cat);
     }
-    @PutMapping("/{id}")
-    public Cat atualizar(@PathVariable Long id, @RequestBody Cat cat) {
-        cat.setId(id);
-        return service.salvar(cat);
+
+    @PutMapping(value = "/{id}", consumes = "multipart/form-data")
+    public Cat atualizar(
+            @PathVariable Long id,
+            @RequestParam("nome") String nome,
+            @RequestParam("idade") Integer idade,
+            @RequestParam("genero") String genero,
+            @RequestParam("tipoAdocao") String tipoAdocao,
+            @RequestParam("descricao") String descricao,
+            @RequestParam("status") String status,
+            @RequestParam(value = "foto", required = false) MultipartFile foto
+    ) throws IOException {
+
+        Cat catExistente = service.buscarPorId(id)
+                .orElseThrow(() -> new RuntimeException("Gato não encontrado"));
+
+        catExistente.setNome(nome);
+        catExistente.setIdade(idade);
+        catExistente.setGenero(genero);
+        catExistente.setTipoAdocao(tipoAdocao);
+        catExistente.setDescricao(descricao);
+        catExistente.setStatus(status);
+
+        if (foto != null && !foto.isEmpty()) {
+            String fileName = salvarImagem(foto);
+            catExistente.setFoto(fileName);
+        }
+
+        return service.salvar(catExistente);
     }
 
     @DeleteMapping("/{id}")
     public void deletar(@PathVariable Long id) {
         service.deletar(id);
+    }
+
+    private String salvarImagem(MultipartFile foto) throws IOException {
+        String originalName = foto.getOriginalFilename();
+        String extension = "";
+
+        if (originalName != null && originalName.contains(".")) {
+            extension = originalName.substring(originalName.lastIndexOf("."));
+        }
+
+        String fileName = UUID.randomUUID() + extension;
+
+        Path uploadPath = Paths.get("uploads");
+        Files.createDirectories(uploadPath);
+
+        Path filePath = uploadPath.resolve(fileName);
+        Files.copy(foto.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        return fileName;
     }
 }

@@ -19,7 +19,10 @@ public class Cat {
     private Integer idade;
     private String genero;
     private String tipoAdocao;
+
+    @Column(length = 1000)
     private String descricao;
+
     private String status;
     private String foto;
 }
