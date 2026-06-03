@@ -1,7 +1,6 @@
 package com.catcafe.service;
 
 import com.catcafe.model.AtividadeEspecial;
-import com.catcafe.model.Historico;
 import com.catcafe.repository.AtividadeEspecialRepository;
 import org.springframework.stereotype.Service;
 
@@ -13,11 +12,13 @@ public class AtividadeEspecialService {
 
     private final AtividadeEspecialRepository repository;
 
-    public AtividadeEspecialService(AtividadeEspecialRepository repository) {
+    public AtividadeEspecialService(
+            AtividadeEspecialRepository repository
+    ) {
         this.repository = repository;
     }
 
-    public List<AtividadeEspecial> listarTodas() {
+    public List<AtividadeEspecial> listarTodos() {
         return repository.findAll();
     }
 
@@ -25,13 +26,9 @@ public class AtividadeEspecialService {
         return repository.findById(id);
     }
 
-    public AtividadeEspecial salvar(AtividadeEspecial atividade) {
-        if (atividade.getHistorico() != null) {
-            for (Historico historico : atividade.getHistorico()) {
-                historico.setAtividadeEspecial(atividade);
-            }
-        }
-
+    public AtividadeEspecial salvar(
+            AtividadeEspecial atividade
+    ) {
         return repository.save(atividade);
     }
 

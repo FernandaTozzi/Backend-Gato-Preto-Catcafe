@@ -6,9 +6,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/atividades")
@@ -23,7 +25,7 @@ public class AtividadeEspecialController {
 
     @GetMapping
     public List<AtividadeEspecial> listar() {
-        return service.listarTodas();
+        return service.listarTodos();
     }
 
     @GetMapping("/{id}")
@@ -35,62 +37,41 @@ public class AtividadeEspecialController {
     public AtividadeEspecial criar(
             @RequestParam("titulo") String titulo,
             @RequestParam("descricao") String descricao,
-            @RequestParam(value = "imagem", required = false) MultipartFile imagem
+            @RequestParam("inicioEvento") String inicioEvento,
+            @RequestParam("fimEvento") String fimEvento,
+            @RequestParam("imagem") MultipartFile imagem
     ) throws IOException {
 
+        String fileName = imagem.getOriginalFilename();
+
+        Path path = Paths.get("uploads/" + fileName);
+
+        Files.createDirectories(path.getParent());
+
+        Files.write(path, imagem.getBytes());
+
         AtividadeEspecial atividade = new AtividadeEspecial();
+
         atividade.setTitulo(titulo);
         atividade.setDescricao(descricao);
-
-        if (imagem != null && !imagem.isEmpty()) {
-            atividade.setImagem(salvarImagem(imagem));
-        }
+        atividade.setImagem(fileName);
+        atividade.setInicioEvento(LocalDateTime.parse(inicioEvento));
+        atividade.setFimEvento(LocalDateTime.parse(fimEvento));
 
         return service.salvar(atividade);
     }
 
-    @PutMapping(value = "/{id}", consumes = "multipart/form-data")
+    @PutMapping("/{id}")
     public AtividadeEspecial atualizar(
             @PathVariable Long id,
-            @RequestParam("titulo") String titulo,
-            @RequestParam("descricao") String descricao,
-            @RequestParam(value = "imagem", required = false) MultipartFile imagem
-    ) throws IOException {
-
-        AtividadeEspecial atividade = service.buscarPorId(id)
-                .orElseThrow(() -> new RuntimeException("Atividade não encontrada"));
-
-        atividade.setTitulo(titulo);
-        atividade.setDescricao(descricao);
-
-        if (imagem != null && !imagem.isEmpty()) {
-            atividade.setImagem(salvarImagem(imagem));
-        }
-
+            @RequestBody AtividadeEspecial atividade
+    ) {
+        atividade.setId(id);
         return service.salvar(atividade);
     }
 
     @DeleteMapping("/{id}")
     public void deletar(@PathVariable Long id) {
         service.deletar(id);
-    }
-
-    private String salvarImagem(MultipartFile imagem) throws IOException {
-        String originalName = imagem.getOriginalFilename();
-        String extension = "";
-
-        if (originalName != null && originalName.contains(".")) {
-            extension = originalName.substring(originalName.lastIndexOf("."));
-        }
-
-        String fileName = UUID.randomUUID() + extension;
-
-        Path uploadPath = Paths.get("uploads");
-        Files.createDirectories(uploadPath);
-
-        Path filePath = uploadPath.resolve(fileName);
-        Files.copy(imagem.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-        return fileName;
     }
 }

@@ -1,11 +1,9 @@
 package com.catcafe.model;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "atividade_especial")
@@ -26,11 +24,9 @@ public class AtividadeEspecial {
 
     private String imagem;
 
-    @OneToMany(
-            mappedBy = "atividadeEspecial",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    @JsonManagedReference
-    private List<Historico> historico = new ArrayList<>();
+    @Column(name = "inicio_evento", nullable = false)
+    private LocalDateTime inicioEvento;
+
+    @Column(name = "fim_evento", nullable = false)
+    private LocalDateTime fimEvento;
 }
